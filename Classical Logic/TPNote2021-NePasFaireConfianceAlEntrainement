@@ -1,0 +1,222 @@
+(* Lire soigneusement les énoncés *)
+(* une copie sans nommage automatique sera bonifiée *)
+
+(* Les seules tactiques autorisées (mais PAS FORCÉMENT NÉCESSAIRES) sont :
+
+- assumption. (axiome de la déduction)
+
+- intro (avec nom : introduction de la flèche et du quantificateur universel)
+
+- apply (avec nom de l'hypothèse ou du théorème : élimination de la FLÈCHE)
+
+- split. (introduction du /\)
+
+- left ou right. (introduction du \/)
+
+- destruct (nom de l'hypothèse/de l'objet à décomposer : 
+               + si c'est un \/ alors élimination du \/
+               + si c'est un /\ alors décompose le /\ en hypothèse (deux nouvelles hyp)
+               + si c'est un existentiel alors introduit l'existentiel en hypothèse (donne un nom)
+               éventuellement (bonifié) avec "as [ noms des hypothèses introduites dans chaque | branche | ...]"
+
+- exists (désignation de l'élément correct : introduction de l'existentiel)
+
+- simpl (étape de calcul si possible, éventuellement "in " hypothèse)
+
+- rewrite (direction -> ou <-,  nom de l'égalité (hypothèse ou théorème) : élimination de l'ÉGALITÉ)
+
+- discriminate (clôture du but si une hypothèse est une égalité avec deux constructeurs différents)
+
+- induction (nom de l'objet, application du principe d'induction)
+               éventuellement (bonifié) avec "as [ noms des hypothèses introduites dans chaque | branche | ...]"
+
+On rappelle enfin que "not A" est juste une notation pour A -> False (qu'on peut voir en utilisant "unfold not").
+
+Les implications peuvent être considérées comme des fonctions, on peut donc les éliminer en hypothèse en leur donnant des paramètres : 
+- si Ha est P et si Himp est P -> Q, alors (Himp Ha) est Q, 
+- si H est forall x, P(x), alors (H 6) est P(6), etc.
+On pourra également poser en hypothèse des spécialisations d'autres hypothèses grâce à 
+pose (spécialisation sous forme d'application comme ci-dessus) as nom-de-la-nouvelle-hypothèse.
+  
+DES EXEMPLES DE PREUVES SONT DONNÉS PLUS BAS.
+ *)
+
+(* Les questions sont indiquées par QUESTION *)
+(* REMPLACEZ LES Admitted PAR Qed. 
+Un exercice avec Admitted ne sera pas compté.
+Ne laissez Admitted que si vous voulez abandonner l'exercice courant pour passer à la suite. *)
+
+
+Require Import Arith.
+Require Import List.
+Export ListNotations.
+
+Section Propositionnel.
+Context (A B C D : Prop).
+
+
+(* UN PEU DE PROPOSITIONNEL *)
+
+(* QUESTION *)
+Lemma question1 : (A -> B) /\ (B -> C) -> (A -> C).
+Proof.
+intro H0.
+intro H1.
+destruct H0.
+apply H0.
+apply H.
+apply H1.
+Qed.
+
+(* QUESTION *)
+Lemma question2 : (B -> A) -> (B \/ C) -> (A/\B -> C) -> C.
+Proof.
+intro H0.
+intro H1.
+intro H2.
+destruct H1.
+  - apply H2.
+    split.
+    -- apply H0.
+       apply H.
+    -- apply H.
+  - apply H.
+Qed.
+     
+End Propositionnel.
+
+(* UN PEU DE PREMIER ORDRE *)
+
+Section PremierOrdre.
+
+Context (A B C D : nat -> Prop).
+Context  (e f : nat).
+
+(* QUESTION *)
+Lemma question3 : C(e) -> (forall z, C(z) -> B(z) -> D(z)) -> A(e) -> (forall x,A(x) -> B(x)) -> D(e).
+Proof.
+intro CE.
+intro Z.
+intro AE.
+intro X.
+apply Z.
+  - apply CE.
+  - apply X.
+    apply AE.
+Qed.
+
+(* QUESTION *)
+Lemma question4: (forall x, C(x)) ->  (forall x, C(x) -> B(x) -> A(x)) -> (exists x, B(x)) -> exists y, A(y).
+Proof.
+intro CX.
+intro CBAX.
+intro BX.
+
+Admitted.
+
+End PremierOrdre.
+
+(* QUESTION *)
+Lemma addn0 : forall n, n + 0 = n.
+Proof.
+intro n.
+induction n.
+  - simpl.
+    reflexivity.
+  - simpl.
+    rewrite IHn.
+    reflexivity.
+Qed.
+
+  
+(* QUESTION *)
+Lemma addnSm : forall n m, n + S m = S (n+ m).
+Proof.
+intro n.
+intro m.
+induction n.
+  - simpl.
+    reflexivity.
+  - simpl.
+    rewrite IHn.
+    reflexivity.
+Qed.
+
+(* LEMMES DONT ON POURRA AVOIR BESOIN *) 
+(* ET EXEMPLES DE PREUVES                         *)
+
+Lemma addcom : forall n m, n + m = m + n.
+  induction n as [| n' IHn'].
+  - simpl. 
+    intro. 
+    rewrite -> (addn0 m). 
+    reflexivity.
+  - intro. 
+    simpl. 
+    rewrite -> (addnSm m n'). 
+    rewrite -> (IHn' m). 
+    reflexivity.
+Qed.  
+
+Lemma addassoc : 
+forall l n m, 
+l + n + m = l + (n + m).
+induction l as [| l' IHl'].
+  - simpl. 
+    reflexivity.
+  - simpl. 
+    intros n m. 
+    rewrite -> (IHl' n m). 
+    reflexivity.
+Qed.
+
+
+(* On rappelle la fonction de sommation des éléments d'une liste de nat. *)
+Fixpoint sumlist l :=
+  match l with
+  | [] => 0
+  | e::r => (sumlist r) + e
+  end.
+
+(* On propose une version plus intéressante avec accumulteur de cette fonction. *)
+Fixpoint sumlistacc l acc :=
+  match l with
+  | [] => acc
+  | e::r => sumlistacc r (e+acc)
+  end.
+
+(* QUESTION *)
+(* Énoncez (remplacez False) et montrez que pour toute liste et tout accumulateur, la somme des éléments de la liste et de l'accumulateur est bien le résultat de sumlistacc sur la liste et l'accumulateur. *)
+(* ATTENTION À NE PAS FAIRE TROP D'INTRODUCTIONS *)
+Lemma sumlist_sumlistacc_acc : 
+forall(l : list nat),
+forall(a : nat),
+(sumlist l) + a = sumlistacc l a.
+Proof.
+intro l.
+intro a.
+induction l.
+  - simpl.
+    reflexivity.
+  - simpl.
+    pose (addn0 a) as ADD0.
+
+Admitted.
+
+
+(* QUESTION *)
+(* Énoncez (remplacez False) et montrez que pour toute liste, la somme des éléments de la liste est bien le résultat de sumlistacc sur la liste et 0. *)
+Lemma sumlist_sumlistacc : (**)False(**).
+Proof.
+
+Admitted.
+
+(* Montrez que pour toutes listes de nat l1 et l2 la somme des sommes des éléments de l1 et l2 est la somme des éléments de la concaténation de l1 à l2. *)
+Lemma sumlist_compat : forall l1 l2, sumlist l1 + sumlist l2 = sumlist (l1++l2).
+Proof.
+
+Admitted.
+
+
+
+
